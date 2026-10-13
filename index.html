@@ -1,0 +1,1376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Dragon's Peak V1.10</title>
+<style>
+  :root {
+    /* Dragon Palette: Obsidian, Ash, Hellfire Red, Ember Orange, Dragon Gold */
+    --bg-base: #080505;
+    --panel-bg: #120909;
+    --panel-border: #2a1515;
+    --silver-bright: #fcdab7;
+    --silver-main: #c4a482;
+    --silver-dim: #7a5c43;
+    --silver-dark: #3d2314;
+    
+    --status-green: #22c55e;
+    --status-red: #ef4444;
+    --status-amber: #f97316;
+    --status-gold: #fbbf24;
+    --status-blue: #38bdf8;
+    --status-purple: #a855f7;
+    
+    --t0-col: #7a5c43; --t1-col: #22c55e; --t2-col: #38bdf8; --t3-col: #3b82f6; --t4-col: #a855f7; 
+    --t5-col: #d946ef; --t6-col: #f97316; --t7-col: #ef4444; --t8-col: #dc2626; --t9-col: #fbbf24;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Georgia', serif; -webkit-tap-highlight-color: transparent; }
+
+  html, body { width: 100%; height: 100%; background: var(--bg-base); color: var(--silver-bright); display: flex; flex-direction: column; overflow: hidden; }
+
+  body::before {
+    content: " "; display: block; position: fixed; top: 0; left: 0; bottom: 0; right: 0;
+    background: radial-gradient(circle at 50% 0%, rgba(251, 191, 36, 0.04) 0%, transparent 65%);
+    pointer-events: none; z-index: 1;
+  }
+
+  header { flex-shrink: 0; background: #050202; border-bottom: 1px solid var(--status-red); padding: 6px 10px; display: flex; flex-direction: column; gap: 4px; z-index: 10; }
+  .header-top { display: flex; justify-content: space-between; align-items: center; }
+  .brand-title { font-size: 14px; font-weight: 900; letter-spacing: 1.5px; text-transform: uppercase; color: var(--status-gold); text-shadow: 0 0 8px rgba(251,191,36,0.4); font-family: sans-serif;}
+  .brand-title span { color: var(--status-red); text-shadow: 0 0 8px rgba(239,68,68,0.4); }
+
+  .hud-stats { display: flex; gap: 4px; overflow-x: auto; white-space: nowrap; padding-bottom: 2px; }
+  .hud-stats::-webkit-scrollbar { display: none; }
+  .hud-pill { background: #000; border: 1px solid var(--panel-border); padding: 3px 6px; border-radius: 3px; font-size: 10px; font-family: monospace; font-weight: bold; }
+
+  nav { flex-shrink: 0; display: grid; grid-template-columns: repeat(4, 1fr); background: var(--panel-bg); border-bottom: 1px solid var(--panel-border); z-index: 9; }
+  .nav-btn { padding: 10px 4px; background: transparent; border: none; border-right: 1px solid var(--panel-border); border-bottom: 1px solid var(--panel-border); color: var(--silver-dim); font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer; transition: 0.15s; text-align: center; font-family: sans-serif;}
+  .nav-btn:nth-child(4n) { border-right: none; }
+  .nav-btn:nth-child(n+5) { border-bottom: none; }
+  .nav-btn.active { background: rgba(239, 68, 68, 0.08); color: var(--status-gold); box-shadow: inset 0 -2px 0 var(--status-red); }
+
+  main { flex: 1; overflow-y: auto; padding: 10px; padding-bottom: 70px; z-index: 2; }
+  .view-tab { display: none; flex-direction: column; gap: 10px; }
+  .view-tab.active { display: flex; }
+
+  .panel { background: rgba(18, 9, 9, 0.9); border: 1px solid var(--panel-border); border-radius: 5px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+  .panel-header { font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; color: #fff; padding-bottom: 6px; border-bottom: 1px solid var(--panel-border); display: flex; justify-content: space-between; align-items: center; font-family: sans-serif;}
+
+  .control-bar { display: flex; flex-wrap: wrap; gap: 6px; background: #000; padding: 6px 8px; border-radius: 4px; border: 1px solid var(--panel-border); align-items: center; }
+  .control-group { display: flex; gap: 4px; align-items: center; border-right: 1px solid var(--panel-border); padding-right: 6px; }
+  .control-group:last-child { border-right: none; padding-right: 0; }
+  .control-label { font-size: 8.5px; font-weight: bold; color: var(--silver-dim); text-transform: uppercase; letter-spacing: 0.5px; font-family: sans-serif;}
+
+  button.btn { background: #000; border: 1px solid var(--silver-dim); color: var(--silver-bright); padding: 5px 9px; font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; border-radius: 3px; cursor: pointer; transition: 0.1s; font-family: sans-serif;}
+  button.btn:active { background: var(--silver-bright); color: #000; border-color: var(--silver-bright); }
+  button.btn:disabled { opacity: 0.35; cursor: not-allowed; border-color: var(--silver-dark); }
+  
+  button.btn-red { background: rgba(239, 68, 68, 0.05); border-color: var(--status-red); color: var(--status-red); }
+  button.btn-red:active { background: var(--status-red); color: #000; box-shadow: 0 0 10px var(--status-red); }
+  
+  button.btn-gold { border-color: var(--status-gold); color: var(--status-gold); }
+  button.btn-gold:active { background: var(--status-gold); color: #000; box-shadow: 0 0 10px var(--status-gold); }
+  
+  button.btn-purple { border-color: var(--status-purple); color: var(--status-purple); }
+  button.btn-purple:active { background: var(--status-purple); color: #fff; box-shadow: 0 0 10px var(--status-purple); }
+
+  .fleet-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
+  @media(min-width: 600px) { .fleet-grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); } }
+
+  .plane-card { background: #000; border: 1px solid var(--panel-border); border-radius: 4px; padding: 10px; display: flex; flex-direction: column; gap: 6px; position: relative; }
+  .plane-card.in-flight { border-left: 3px solid var(--status-amber); }
+  .plane-card.damaged { border-left: 3px solid var(--status-red); }
+  
+  .spec-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; background: #050202; padding: 6px; border-radius: 3px; font-size: 9px; font-family: monospace; border: 1px solid var(--panel-border); }
+  .spec-grid span { color: var(--silver-dim); }
+
+  .badge { padding: 2px 4px; border-radius: 2px; font-size: 8px; font-weight: 900; font-family: monospace; background: #1a0a0a; color: var(--status-amber); border: 1px solid var(--status-red); }
+  
+  .route-row { background: #000; border: 1px solid var(--panel-border); border-radius: 3px; padding: 8px 10px; display: flex; justify-content: space-between; align-items: center; font-size: 10px; }
+
+  .flight-bar-bg { width: 100%; height: 6px; background: #111; border: 1px solid #331111; border-radius: 2px; overflow: hidden; margin-top: 2px; }
+  .flight-bar-fill { height: 100%; background: var(--status-amber); width: 0%; box-shadow: 0 0 6px var(--status-amber);}
+
+  .auction-slot { background: #000; border: 1px solid var(--panel-border); padding: 10px; border-radius: 4px; display: flex; flex-direction: column; gap: 6px; }
+  .auction-timer-bg { width: 100%; height: 5px; background: #111; border: 1px solid var(--status-red); border-radius: 2px; overflow: hidden; }
+  .auction-timer-bar { height: 100%; background: var(--status-red); width: 100%; transition: width 0.1s linear;}
+  .auction-log { height: 44px; background: #050202; border: 1px solid var(--panel-border); padding: 4px; font-size: 8.5px; font-family: monospace; overflow: hidden; border-radius: 3px; color: var(--silver-main); }
+
+  .fraction-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+  .pack-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+
+  select { background: #0a0505; color: #fff; border: 1px solid var(--silver-dark); padding: 5px; font-size: 10px; border-radius: 3px; outline: none; font-weight: bold; cursor: pointer; font-family: sans-serif;}
+  
+  .check-item { display: flex; justify-content: space-between; align-items: center; background: #000; padding: 8px 10px; border: 1px solid var(--panel-border); border-radius: 3px; font-size: 10px; }
+  .check-item.done { border-color: var(--status-green); background: rgba(34, 197, 94, 0.06); }
+
+  #toast-rack { position: fixed; bottom: 16px; left: 10px; right: 10px; display: flex; flex-direction: column; gap: 6px; z-index: 1000; pointer-events: none; }
+  .toast { background: #000; border: 1px solid var(--status-red); border-left: 4px solid var(--status-amber); color: #fff; padding: 8px 12px; font-size: 11px; font-weight: bold; font-family: sans-serif; border-radius: 3px; box-shadow: 0 4px 15px rgba(0,0,0,0.9); animation: slideUp 0.2s, fadeOut 0.4s 2.6s forwards; pointer-events: auto;}
+  
+  @keyframes slideUp { from { transform: translateY(15px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  @keyframes fadeOut { to { opacity: 0; transform: translateY(-5px); } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <div class="brand-title">DRAGON'S PEAK <span>// V1.10</span></div>
+    <div style="display:flex; gap:4px;">
+      <button class="btn" style="padding:3px 6px; font-size:8px;" onclick="saveGame()">SAVE</button>
+      <button class="btn" style="padding:3px 6px; font-size:8px;" onclick="loadGame()">LOAD</button>
+      <button class="btn btn-gold" style="padding:3px 6px; font-size:8px;" onclick="godMode()">BLESSING</button>
+    </div>
+  </div>
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+      <div class="hud-stats">
+        <div class="hud-pill">GOLD: <span id="hud-funds" style="color:var(--status-gold);">$0</span></div>
+        <div class="hud-pill">DRAGONS: <span id="hud-fleet-count">0</span></div>
+        <div class="hud-pill">RIDERS: <span id="hud-pilot-count">0</span></div>
+        <div class="hud-pill">MEAT: <span id="hud-fuel" style="color:var(--status-red);">0</span></div>
+      </div>
+      <div class="control-bar" style="padding:2px 4px; margin-left:4px;">
+        <button class="btn btn-red active" id="buy-1" style="padding:2px 4px; font-size:8px;" onclick="setBuyMode(1)">1x</button>
+        <button class="btn" id="buy-0.25" style="padding:2px 4px; font-size:8px;" onclick="setBuyMode(0.25)">25%</button>
+        <button class="btn" id="buy-0.5" style="padding:2px 4px; font-size:8px;" onclick="setBuyMode(0.5)">50%</button>
+        <button class="btn" id="buy-1.0" style="padding:2px 4px; font-size:8px;" onclick="setBuyMode(1.0)">MAX</button>
+      </div>
+  </div>
+</header>
+
+<nav>
+  <button class="nav-btn active" onclick="setTab('market')">Wilds Market</button>
+  <button class="nav-btn" onclick="setTab('gacha')">Hatchery</button>
+  <button class="nav-btn" onclick="setTab('fleet')">Dragon Lairs</button>
+  <button class="nav-btn" onclick="setTab('pilots')">Rider Guild</button>
+  <button class="nav-btn" onclick="setTab('routes')">Quests (400)</button>
+  <button class="nav-btn" onclick="setTab('auction')">Menagerie</button>
+  <button class="nav-btn" onclick="setTab('checklist')">Decrees</button>
+  <button class="nav-btn" onclick="setTab('upgrades')">Sanctuary</button>
+</nav>
+
+<main>
+
+  <!-- TAB 1: REVOLVING MARKET -->
+  <div id="tab-market" class="view-tab active">
+    <div class="panel">
+      <div class="panel-header">
+        <span>Wild Beast Spot Market</span>
+        <span style="font-size:10px; color:var(--silver-dim);">SIGHTINGS IN: <span id="market-timer" style="font-size:12px; font-weight:bold; color:var(--status-amber);">10.0</span>s</span>
+      </div>
+      <p style="font-size:10px; color:var(--silver-dim);">5 wild dragons spotted every 10 seconds. Capture them cheap before they fly away.</p>
+      <div id="market-grid" class="fleet-grid"></div>
+    </div>
+  </div>
+
+  <!-- TAB 2: GACHA (LOGISTICS 1, 5, 10 PACKS) -->
+  <div id="tab-gacha" class="view-tab">
+    <div class="panel">
+      <div class="panel-header">Dragon Egg Hatchery</div>
+      <div style="display:flex; flex-direction:column; gap:6px;">
+        <div style="border:1px solid var(--panel-border); padding:8px; border-radius:3px;">
+          <div style="font-size:10px; font-weight:bold; margin-bottom:6px;">COMMON NESTS [T1-T4] (10K Gold)</div>
+          <div class="pack-row">
+            <button class="btn" onclick="buyAirCrates(0, 1)">Hatch 1x</button>
+            <button class="btn" onclick="buyAirCrates(0, 5)">Hatch 5x</button>
+            <button class="btn btn-red" onclick="buyAirCrates(0, 10)">Hatch 10x</button>
+          </div>
+        </div>
+        <div style="border:1px solid var(--panel-border); padding:8px; border-radius:3px;">
+          <div style="font-size:10px; color:var(--status-blue); font-weight:bold; margin-bottom:6px;">MOUNTAIN EYRIES [T3-T6] (100K Gold)</div>
+          <div class="pack-row">
+            <button class="btn" style="border-color:var(--status-blue); color:var(--status-blue);" onclick="buyAirCrates(1, 1)">Hatch 1x</button>
+            <button class="btn" style="border-color:var(--status-blue); color:var(--status-blue);" onclick="buyAirCrates(1, 5)">Hatch 5x</button>
+            <button class="btn btn-red" onclick="buyAirCrates(1, 10)">Hatch 10x</button>
+          </div>
+        </div>
+        <div style="border:1px solid var(--panel-border); padding:8px; border-radius:3px;">
+          <div style="font-size:10px; color:var(--status-purple); font-weight:bold; margin-bottom:6px;">ROYAL INCUBATORS [T5-T8] (1.0M Gold)</div>
+          <div class="pack-row">
+            <button class="btn btn-purple" onclick="buyAirCrates(2, 1)">Hatch 1x</button>
+            <button class="btn btn-purple" onclick="buyAirCrates(2, 5)">Hatch 5x</button>
+            <button class="btn btn-red" onclick="buyAirCrates(2, 10)">Hatch 10x</button>
+          </div>
+        </div>
+        <div style="border:1px solid var(--panel-border); padding:8px; border-radius:3px;">
+          <div style="font-size:10px; color:var(--status-gold); font-weight:bold; margin-bottom:6px;">VOLCANIC ASH [T7-T10] (5.0M Gold)</div>
+          <div class="pack-row">
+            <button class="btn btn-gold" onclick="buyAirCrates(3, 1)">Hatch 1x</button>
+            <button class="btn btn-gold" onclick="buyAirCrates(3, 5)">Hatch 5x</button>
+            <button class="btn btn-red" onclick="buyAirCrates(3, 10)">Hatch 10x</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">Dragonlord Guild Contracts</div>
+      <div style="display:flex; flex-direction:column; gap:6px;">
+        <div style="border:1px solid var(--panel-border); padding:8px; border-radius:3px;">
+          <div style="font-size:10px; font-weight:bold; margin-bottom:6px;">SQUIRE ACADEMY [T1-T4] (5K Gold)</div>
+          <div class="pack-row">
+            <button class="btn" onclick="buyDossiers(0, 1)">Hire 1x</button>
+            <button class="btn" onclick="buyDossiers(0, 5)">Hire 5x</button>
+            <button class="btn btn-red" onclick="buyDossiers(0, 10)">Hire 10x</button>
+          </div>
+        </div>
+        <div style="border:1px solid var(--panel-border); padding:8px; border-radius:3px;">
+          <div style="font-size:10px; color:var(--status-blue); font-weight:bold; margin-bottom:6px;">WANDERING KNIGHTS [T3-T6] (50K Gold)</div>
+          <div class="pack-row">
+            <button class="btn" style="border-color:var(--status-blue); color:var(--status-blue);" onclick="buyDossiers(1, 1)">Hire 1x</button>
+            <button class="btn" style="border-color:var(--status-blue); color:var(--status-blue);" onclick="buyDossiers(1, 5)">Hire 5x</button>
+            <button class="btn btn-red" onclick="buyDossiers(1, 10)">Hire 10x</button>
+          </div>
+        </div>
+        <div style="border:1px solid var(--panel-border); padding:8px; border-radius:3px;">
+          <div style="font-size:10px; color:var(--status-purple); font-weight:bold; margin-bottom:6px;">ORDER OF WYRMS [T5-T8] (250K Gold)</div>
+          <div class="pack-row">
+            <button class="btn btn-purple" onclick="buyDossiers(2, 1)">Hire 1x</button>
+            <button class="btn btn-purple" onclick="buyDossiers(2, 5)">Hire 5x</button>
+            <button class="btn btn-red" onclick="buyDossiers(2, 10)">Hire 10x</button>
+          </div>
+        </div>
+        <div style="border:1px solid var(--panel-border); padding:8px; border-radius:3px;">
+          <div style="font-size:10px; color:var(--status-gold); font-weight:bold; margin-bottom:6px;">LEGENDARY DRAGONLORDS [T7-T10] (1.0M Gold)</div>
+          <div class="pack-row">
+            <button class="btn btn-gold" onclick="buyDossiers(3, 1)">Hire 1x</button>
+            <button class="btn btn-gold" onclick="buyDossiers(3, 5)">Hire 5x</button>
+            <button class="btn btn-red" onclick="buyDossiers(3, 10)">Hire 10x</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <span>Livestock Market (Dragon Meat)</span>
+        <span style="font-size:11px; font-weight:bold; color:var(--status-red);"><span id="fuel-price">2.80</span> G / Slab</span>
+      </div>
+      <div class="fraction-row">
+        <button class="btn" onclick="buyFuelFixed(50000)">50K Slabs</button>
+        <button class="btn" onclick="buyFuelFixed(250000)">250K Slabs</button>
+        <button class="btn" onclick="buyFuelFixed(1000000)">1M Slabs</button>
+        <button class="btn btn-red" onclick="buyFuelFixed('MAX')">Max Fill</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 3: FLEET OPS -->
+  <div id="tab-fleet" class="view-tab">
+    <div class="panel">
+      <div class="panel-header">
+        <span>Dragon Lairs</span>
+        <div style="display:flex; gap:4px;">
+          <button class="btn btn-red" onclick="autoAssignPilots()">Auto-Rider</button>
+          <button class="btn btn-red" onclick="autoAssignRoutes()">Auto-Quest</button>
+          <button class="btn btn-red" onclick="dispatchAll()">Take Flight</button>
+          <button class="btn" onclick="maintainAll()">Heal All</button>
+        </div>
+      </div>
+      
+      <div class="control-bar">
+        <div class="control-group">
+          <span class="control-label">Sort:</span>
+          <button class="btn" style="padding:4px 6px; font-size:8px;" onclick="sortHangar('val')">VAL</button>
+          <button class="btn" style="padding:4px 6px; font-size:8px;" onclick="sortHangar('tier')">TIER</button>
+          <button class="btn" style="padding:4px 6px; font-size:8px;" onclick="sortHangar('range')">STAM</button>
+        </div>
+        <div class="control-group">
+          <span class="control-label">Class:</span>
+          <select id="fleet-role-filter" onchange="filterHangarRole(this.value)" style="padding:3px; font-size:9px; width:auto;">
+            <option value="ALL">All Classes</option>
+            <option value="WINDRIDER">Windrider</option>
+            <option value="FIREDRAKE">Firedrake</option>
+            <option value="VENOMSPIT">Venomspit</option>
+            <option value="EARTHSHAKER">Earthshaker</option>
+            <option value="TIDEBRINGER">Tidebringer</option>
+            <option value="STORMWEAVER">Stormweaver</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <span class="control-label">Tier:</span>
+          <select id="fleet-tier-filter" onchange="filterHangarTier(this.value)" style="padding:3px; font-size:9px; width:auto;">
+            <option value="ALL">All Tiers</option>
+            <option value="0">T1</option><option value="1">T2</option><option value="2">T3</option><option value="3">T4</option><option value="4">T5</option>
+            <option value="5">T6</option><option value="6">T7</option><option value="7">T8</option><option value="8">T9</option><option value="9">T10</option>
+          </select>
+        </div>
+        <button class="btn btn-red" style="padding:4px 6px; font-size:8px;" onclick="importPlane()">Import Base36</button>
+      </div>
+
+      <div class="fraction-row">
+        <button class="btn btn-danger" onclick="quickSellPlanes(0)">Release T1</button>
+        <button class="btn btn-danger" onclick="quickSellPlanes(1)">Release T2&lt;</button>
+        <button class="btn btn-danger" onclick="quickSellPlanes(2)">Release T3&lt;</button>
+        <button class="btn btn-danger" onclick="quickSellPlanes(3)">Release T4&lt;</button>
+      </div>
+
+      <div id="fleet-list" class="fleet-grid"></div>
+    </div>
+  </div>
+
+  <!-- TAB 4: PILOTS -->
+  <div id="tab-pilots" class="view-tab">
+    <div class="panel">
+      <div class="panel-header"><span>Rider Guild</span></div>
+      
+      <div class="control-bar">
+        <div class="control-group">
+          <span class="control-label">Sort:</span>
+          <button class="btn" style="padding:4px 6px; font-size:8px;" onclick="sortPilots('val')">VAL</button>
+          <button class="btn" style="padding:4px 6px; font-size:8px;" onclick="sortPilots('tier')">TIER</button>
+        </div>
+        <div class="control-group">
+          <span class="control-label">Tier:</span>
+          <select id="pilot-tier-filter" onchange="filterPilotTier(this.value)" style="padding:3px; font-size:9px; width:auto;">
+            <option value="ALL">All Tiers</option>
+            <option value="0">T1</option><option value="1">T2</option><option value="2">T3</option><option value="3">T4</option><option value="4">T5</option>
+            <option value="5">T6</option><option value="6">T7</option><option value="7">T8</option><option value="8">T9</option><option value="9">T10</option>
+          </select>
+        </div>
+        <button class="btn btn-red" style="padding:4px 6px; font-size:8px;" onclick="importPilot()">Import Base36</button>
+      </div>
+
+      <div class="fraction-row">
+        <button class="btn btn-danger" onclick="quickSellPilots(0)">Exile T1</button>
+        <button class="btn btn-danger" onclick="quickSellPilots(1)">Exile T2&lt;</button>
+        <button class="btn btn-danger" onclick="quickSellPilots(2)">Exile T3&lt;</button>
+        <button class="btn btn-danger" onclick="quickSellPilots(3)">Exile T4&lt;</button>
+      </div>
+
+      <div id="pilots-grid" class="fleet-grid"></div>
+    </div>
+  </div>
+
+  <!-- TAB 5: ROUTES -->
+  <div id="tab-routes" class="view-tab">
+    <div class="panel">
+      <div class="panel-header">
+        <span>Flight Quests (400 Mapped)</span>
+        <select id="route-cat-filter" onchange="filterRouteCategory(this.value)" style="padding:3px; font-size:9px; width:auto;">
+          <option value="ALL">All Flight Paths</option>
+          <option value="WINDRIDER">Scouting Winds</option>
+          <option value="FIREDRAKE">Village Raids</option>
+          <option value="VENOMSPIT">Assassin Strikes</option>
+          <option value="EARTHSHAKER">Castle Sieges</option>
+          <option value="TIDEBRINGER">Naval Intercepts</option>
+          <option value="STORMWEAVER">Titan Battles</option>
+        </select>
+      </div>
+      <div id="routes-list" style="display:flex; flex-direction:column; gap:6px;"></div>
+    </div>
+  </div>
+
+  <!-- TAB 6: AUCTIONS -->
+  <div id="tab-auction" class="view-tab">
+    <div class="panel">
+      <div class="panel-header"><span>Grand Menagerie Auctions</span><span style="color:var(--status-gold);"><span id="auction-count">0</span>/10 CAGES</span></div>
+      <p style="font-size:10px; color:var(--silver-dim);">Bids start at 90% base value. Sniping in the last 1s resets clock to 3s. 2x-20x price spikes active.</p>
+      
+      <div style="display:flex; gap:6px;">
+        <button class="btn btn-red" style="flex:1; padding:8px;" onclick="fillAuctions('planes')">Auto-Fill 10 Cheapest Dragons</button>
+        <button class="btn btn-red" style="flex:1; padding:8px;" onclick="fillAuctions('pilots')">Auto-Fill 10 Cheapest Riders</button>
+      </div>
+
+      <div id="auction-idle" style="text-align:center; padding:16px; color:var(--silver-dim); font-size:11px;">Cages empty. Use Auto-Fill or click Auction on any individual asset.</div>
+      <div id="auction-board" class="fleet-grid"></div>
+    </div>
+  </div>
+
+  <!-- TAB 7: CHECKLIST & MISSIONS -->
+  <div id="tab-checklist" class="view-tab">
+    <div class="panel">
+      <div class="panel-header">Lair Automations</div>
+      <div style="display:flex; flex-direction:column; gap:6px;">
+        <div class="check-item">
+          <div><strong>Endless Hoarding Loop:</strong> Automatically re-dispatches dragons on their assigned quest after return.</div>
+          <button id="chk-autoloop" class="btn" onclick="toggleAutoLoop()">ENABLE</button>
+        </div>
+        <div class="check-item">
+          <div><strong>Automated Healing:</strong> Automatically heals dragons if health falls below 45%.</div>
+          <button id="chk-automro" class="btn" onclick="toggleAutoMRO()">ENABLE</button>
+        </div>
+        <div class="check-item">
+          <div><strong>Automated Butchery:</strong> Buys 100K Slabs of Meat when reserves fall below 50K.</div>
+          <button id="chk-autorefuel" class="btn" onclick="toggleAutoRefuel()">ENABLE</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <span>King's Decrees</span>
+        <button class="btn btn-gold" style="padding:2px 6px; font-size:8px;" onclick="refreshSideMissions()">Reroll Decrees</button>
+      </div>
+      <p style="font-size:10px; color:var(--silver-dim); margin-bottom:4px;">Deploy specific elemental classes on exact quests to earn massive gold and free dragons.</p>
+      <div id="side-missions-list" style="display:flex; flex-direction:column; gap:6px;"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">Dragonlord Milestones</div>
+      <div id="milestone-list" style="display:flex; flex-direction:column; gap:6px;"></div>
+    </div>
+  </div>
+
+  <!-- TAB 8: UPGRADES -->
+  <div id="tab-upgrades" class="view-tab">
+    <div class="panel">
+      <div class="panel-header">Sanctuary Expansions</div>
+      <div style="border:1px solid var(--panel-border); padding:8px; border-radius:3px; background:#000;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:11px;">
+          <span style="font-weight:bold; color:var(--status-gold);">Hoard Valuation</span>
+          <span style="color:var(--silver-dim);">Lvl <span id="upg-mkt-lvl">0</span> (+<span id="upg-mkt-pct">0</span>%)</span>
+        </div>
+        <div style="font-size:9.5px; color:var(--silver-dim); margin-bottom:6px;">Permanently boosts base quest gold yields by +5% per level.</div>
+        <button class="btn btn-gold" style="width:100%;" onclick="buyUpgrade('mkt')">Invest (<span id="upg-mkt-cost">100000</span> G)</button>
+      </div>
+      <div style="border:1px solid var(--panel-border); padding:8px; border-radius:3px; background:#000;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:11px;">
+          <span style="color:var(--status-blue); font-weight:bold;">Metabolic Conditioning</span>
+          <span style="color:var(--silver-dim);">Lvl <span id="upg-eng-lvl">0</span> (-<span id="upg-eng-pct">0</span>%)</span>
+        </div>
+        <div style="font-size:9.5px; color:var(--silver-dim); margin-bottom:6px;">Permanently reduces fleet-wide meat consumption by 2% per level (Max 70%).</div>
+        <button class="btn" style="border-color:var(--status-blue); color:var(--status-blue); width:100%;" onclick="buyUpgrade('eng')">Invest (<span id="upg-eng-cost">150000</span> G)</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div id="toast-rack"></div>
+
+<script>
+  /* ================= 9,600 FANTASY COMBINATIONS ================= */
+  const AIR_PREFIXES = ["Feral","Armored","Scaled","Elder","Ancient","Savage","Crested","Winged","Horned","Dread"];
+  const AIR_BRANDS = ["Crimson","Obsidian","Sapphire","Emerald","Golden","Bone","Ash","Void"];
+  const AIR_MODELS = ["Wyvern","Drake","Dragon","Leviathan","Serpent","Behemoth","Gargoyle","Chimera","Basilisk","Hydra", "Coatl", "Lindwurm", "Amphiptere", "Raptor", "Goliath", "Titan", "Colossus", "Apex", "Scourge", "Terror"];
+  const AIR_ROLES = ["WINDRIDER", "FIREDRAKE", "VENOMSPIT", "EARTHSHAKER", "TIDEBRINGER", "STORMWEAVER"];
+
+  const P_FIRST = ["Kael","Lyra","Sylas","Vex","Rowan","Thorne","Elara","Bram","Caelan","Darius","Faelan","Gael","Haldor","Ilya","Jace","Kaelen","Lirael","Mael","Nia","Orion"];
+  const P_LAST = ["Stormborn","Dragonheart","Fireforge","Ironwing","Scalebane","Skycaller","Ashbringer","Voidwalker","Sunstrike","Frostblood","Embermane","Stonegrip","Windrider","Grimward","Lightbringer","Nightfall","Bloodfang","Doomwhisper","Swiftstrike","Starfall"];
+  const P_CALL = ["'The Mad'","'The Swift'","'The Fierce'","'The Giant'","'The Scarred'","'The Shadow'","'The Demon'","'The Just'"];
+  const B_TYPES = ["HOARD","SWIFT","HUNGER","SCALES"]; // HOARD=Gold, SWIFT=Time, HUNGER=Meat, SCALES=Health
+
+  const TIERS = [
+    { tier: 1, name: "Tier I: Hatchling", color: "var(--t0-col)", baseVal: 50000 },
+    { tier: 2, name: "Tier II: Fledgling", color: "var(--t1-col)", baseVal: 150000 },
+    { tier: 3, name: "Tier III: Yearling", color: "var(--t2-col)", baseVal: 500000 },
+    { tier: 4, name: "Tier IV: Drake", color: "var(--t3-col)", baseVal: 1500000 },
+    { tier: 5, name: "Tier V: Wyrm", color: "var(--t4-col)", baseVal: 5000000 },
+    { tier: 6, name: "Tier VI: Alpha", color: "var(--t5-col)", baseVal: 15000000 },
+    { tier: 7, name: "Tier VII: Elder", color: "var(--t6-col)", baseVal: 40000000 },
+    { tier: 8, name: "Tier VIII: Ancient", color: "var(--t7-col)", baseVal: 100000000 },
+    { tier: 9, name: "Tier IX: Leviathan", color: "var(--t8-col)", baseVal: 250000000 },
+    { tier: 10, name: "Tier X: Primal", color: "var(--t9-col)", baseVal: 500000000 }
+  ];
+
+  const AIRPORT_CAT = {
+    WINDRIDER: ["Cloud Castles","Sky Pillars","Windy Steppes","High Peaks","Floating Islands","Storm Spire","Aero City","Zephyr Valley","Gale Cliffs","Eagle's Roost"],
+    FIREDRAKE: ["Dragon's Peak","Volcano Crater","Lava Fields","Ash Wastes","Ember City","Scorched Plains","Flame Keep","Molten Crag","Burning Forest","Inferno Ridge"],
+    VENOMSPIT: ["Acid Swamps","Poison Bogs","Mushroom Forest","Serpent's Lair","Toxic Ruins","Fungal Caves","Slime Pits","Blighted Lands","Corrosive Lake","Basilisk Den"],
+    EARTHSHAKER: ["Deep Chasms","Crystal Caverns","Dwarven Mines","Stone Fortresses","Granite Peaks","Tremor Valley","Obsidian Vaults","Goliath's Rest","Troll Bridge","Mud Flats"],
+    TIDEBRINGER: ["Abyssal Trench","Coral Reefs","Sunken City","Maelstrom Core","Leviathan Wake","Mermaid Shoals","Kraken Bay","Tsunami Coast","Whirlpool Eye","Sapphire Depths"],
+    STORMWEAVER: ["Lightning Rods","Thunder Plains","Hurricane Eye","Titan's Cradle","Doomsday Peak","Gods' Fall","Static Wastes","Electric Sea","Tempest Spire","Aether Core"]
+  };
+
+  const MILESTONES = [
+    { id: "m1", title: "First Flight", desc: "Send a dragon on a mapped quest.", reward: 250000, req: s => s.fleet.some(p => p.status === 'IN_FLIGHT' || p.expRev > 0) },
+    { id: "m2", title: "Small Brood", desc: "Own 5 or more dragons in your lair.", reward: 1000000, req: s => s.fleet.length >= 5 },
+    { id: "m3", title: "Rider Academy", desc: "Recruit 5 or more riders into your guild.", reward: 750000, req: s => s.pilots.length >= 5 },
+    { id: "m4", title: "Far Horizons", desc: "Unlock a quest with distance > 3,000 KM.", reward: 2000000, req: s => s.routes.some(r => r.unlocked && r.dist >= 3000) },
+    { id: "m5", title: "Titan Slayer", desc: "Acquire a Stormweaver class dragon.", reward: 3000000, req: s => s.fleet.some(p => p.role === 'STORMWEAVER') },
+    { id: "m6", title: "Elder Beast", desc: "Acquire a Tier V or higher dragon.", reward: 8000000, req: s => s.fleet.some(p => p.tierIndex >= 4) },
+    { id: "m7", title: "Dragonlord", desc: "Recruit a Tier V or higher rider.", reward: 4000000, req: s => s.pilots.some(p => p.tierIndex >= 4) },
+    { id: "m8", title: "Mountain of Meat", desc: "Accumulate over 500,000 Slabs in reserve.", reward: 2500000, req: s => s.fuelReserve >= 500000 },
+    { id: "m9", title: "King's Hoard", desc: "Amass over 100,000,000 Gold.", reward: 20000000, req: s => s.funds >= 100000000 },
+    { id: "m10", title: "Grand Lair", desc: "Expand lair to 10 active dragons.", reward: 5000000, req: s => s.fleet.length >= 10 },
+    { id: "m11", title: "Beast Tamer", desc: "Sell an asset on the Grand Menagerie.", reward: 1500000, req: s => s.statAuctionsSold > 0 },
+    { id: "m12", title: "Feral Release", desc: "Release any dragon back into the wild.", reward: 1000000, req: s => s.statPlanesScrapped > 0 },
+    { id: "m13", title: "Edge of the World", desc: "Unlock a quest > 6,500 KM.", reward: 6000000, req: s => s.routes.some(r => r.unlocked && r.dist >= 6500) },
+    { id: "m14", title: "Council of Elders", desc: "Employ 3 or more Tier VII+ Legends.", reward: 15000000, req: s => s.pilots.filter(p => p.tierIndex >= 6).length >= 3 },
+    { id: "m15", title: "God of the Skies", desc: "Acquire a Tier X Primal dragon.", reward: 50000000, req: s => s.fleet.some(p => p.tierIndex === 9) }
+  ];
+
+  const $ = id => document.getElementById(id);
+
+  /* ================= STATE ================= */
+  let State = {
+    funds: 50000000, 
+    fuelReserve: 250000,
+    fuelSpotPrice: 2.85,
+    buyMode: 1, 
+    sortHangarMode: 'val',
+    filterHangarRole: 'ALL',
+    filterHangarTier: 'ALL',
+    sortPilotsMode: 'val',
+    filterPilotTier: 'ALL',
+    filterRouteCat: 'ALL',
+    fleet: [], pilots: [], routes: [], auctions: [], marketCars: [],
+    marketTimer: 10.0,
+    upgrades: { mkt: 0, eng: 0 },
+    automation: { autoDispatch: false, autoMRO: false, autoRefuel: false },
+    claimedMilestones: [],
+    sideMissions: [],
+    statAuctionsSold: 0,
+    statPlanesScrapped: 0
+  };
+  let globalInterval = null;
+
+  /* ================= UTILITY & BASE36 ================= */
+  function fmt(n) {
+    if (n >= 1e12) return (n / 1e12).toFixed(2) + "T";
+    if (n >= 1e9) return (n / 1e9).toFixed(2) + "B";
+    if (n >= 1e6) return (n / 1e6).toFixed(2) + "M";
+    if (n >= 1e3) return (n / 1e3).toFixed(1) + "K";
+    return Math.floor(n).toLocaleString();
+  }
+  function toast(msg) {
+    const r = $('toast-rack'); const e = document.createElement('div');
+    e.className = 'toast'; e.innerHTML = msg; r.appendChild(e);
+    setTimeout(() => e.remove(), 2800);
+  }
+  function updateHUD() {
+    if($('hud-funds')) $('hud-funds').innerText = fmt(State.funds);
+    if($('hud-fleet-count')) $('hud-fleet-count').innerText = State.fleet.length;
+    if($('hud-pilot-count')) $('hud-pilot-count').innerText = State.pilots.length;
+    if($('hud-fuel')) $('hud-fuel').innerText = fmt(State.fuelReserve);
+  }
+  function godMode() {
+    State.funds += 2000000000; State.fuelReserve += 10000000;
+    State.fleet.forEach(p => p.condition = 100);
+    toast("BLESSING: +2B Gold, +10M Meat, Health Restored.");
+    updateHUD(); renderFleet();
+  }
+  function saveGame() { localStorage.setItem('dragonsPeakV1_10', JSON.stringify(State)); toast("Progress Saved."); }
+  function loadGame() {
+    let s = localStorage.getItem('dragonsPeakV1_10');
+    if (s) {
+      State = JSON.parse(s);
+      if(!State.routes || State.routes.length < 400) State.routes = generateRoutes();
+      if(!State.sideMissions || State.sideMissions.length === 0) generateSideMissions();
+      State.fleet.forEach(p => { p.status = 'READY'; p.flightEnd = 0; p.flightStart = 0; });
+      updateHUD(); updateAutomationUI(); setTab('market');
+      toast("Progress Restored.");
+    } else {
+      toast("No saved records found.");
+    }
+  }
+  function setBuyMode(val) {
+      State.buyMode = val;
+      ['buy-1','buy-0.25','buy-0.5','buy-0.75','buy-1.0'].forEach(id => { if($(id)) $(id).classList.remove('active'); });
+      let sel = val===1?'buy-1':val===0.25?'buy-0.25':val===0.5?'buy-0.5':val===0.75?'buy-0.75':'buy-1.0';
+      if($(sel)) $(sel).classList.add('active');
+  }
+
+  /* BASE36 FOR RIDERS */
+  function exportPilot(uid) {
+    let p = State.pilots.find(x => x.uid===uid); if(!p) return;
+    let codeInt = p.fIdx * 160 + p.lIdx * 8 + p.cIdx;
+    prompt("Copy Rider Base36 Code:", "RD-" + codeInt.toString(36).toUpperCase());
+  }
+  function importPilot() {
+    let str = prompt("Enter Rider Base36 Code (RD-XXX):"); if(!str) return;
+    str = str.replace('RD-', '').trim();
+    let codeInt = parseInt(str, 36); if(isNaN(codeInt) || codeInt < 0) { toast("Invalid code."); return; }
+    let cIdx = codeInt % 8; codeInt = Math.floor(codeInt / 8);
+    let lIdx = codeInt % 20; codeInt = Math.floor(codeInt / 20);
+    let fIdx = codeInt % 20;
+    let tIdx = Math.floor(Math.random() * 10);
+    let bIdx = Math.floor(Math.random() * 4);
+    State.pilots.push(constructPilot(fIdx, lIdx, cIdx, tIdx, bIdx)); 
+    updateHUD(); renderPilots(); toast("Rider registered via Trade Code!");
+  }
+
+  /* BASE36 FOR DRAGONS */
+  function exportPlane(uid) {
+    let p = State.fleet.find(x => x.uid===uid); if(!p) return;
+    let codeInt = p.pIdx * 960 + p.bIdx * 120 + p.mIdx * 6 + p.rIdx;
+    prompt("Copy Dragon Base36 Code:", "DP-" + codeInt.toString(36).toUpperCase());
+  }
+  function importPlane() {
+    let str = prompt("Enter Dragon Base36 Code (DP-XXX):"); if(!str) return;
+    str = str.replace('DP-', '').trim();
+    let codeInt = parseInt(str, 36); if(isNaN(codeInt) || codeInt < 0) { toast("Invalid code."); return; }
+    let rIdx = codeInt % 6; codeInt = Math.floor(codeInt / 6);
+    let mIdx = codeInt % 20; codeInt = Math.floor(codeInt / 20);
+    let bIdx = codeInt % 8; codeInt = Math.floor(codeInt / 8);
+    let pIdx = codeInt % 10;
+    let tIdx = Math.floor(Math.random() * 10);
+    
+    let tD = TIERS[tIdx];
+    let val = Math.floor(tD.baseVal * 1.0); 
+    let cost = Math.max(50000, Math.floor(val * 0.8)); 
+    let cap = Math.floor(50 + (tIdx * 45));
+    let rnge = Math.floor(1000 + (tIdx * 900));
+    let burn = Math.floor(200 + (tIdx * 150));
+
+    let importedPlane = {
+      uid: 'D' + Math.floor(100+Math.random()*899) + 'PK',
+      pIdx, bIdx, mIdx, rIdx, tierIndex: tIdx,
+      name: `${AIR_PREFIXES[pIdx]} ${AIR_BRANDS[bIdx]} ${AIR_MODELS[mIdx]}`,
+      role: AIR_ROLES[rIdx % AIR_ROLES.length], tierName: tD.name, tierColor: tD.color,
+      value: val, cost: cost, capacity: cap, range: rnge, fuelBurn: burn,
+      condition: 100, status: 'READY', assignedRoute: null, assignedPilot: null
+    };
+    
+    State.fleet.push(importedPlane);
+    updateHUD(); renderFleet(); toast("Dragon hatched via Trade Code!");
+  }
+
+  /* ================= PROCEDURAL GENERATORS (400 Routes) ================= */
+  function generateRoutes() {
+    let rts = [];
+    let roles = AIR_ROLES;
+    let used = new Set();
+    let idCounter = 0;
+
+    roles.forEach(role => {
+      let pool = AIRPORT_CAT[role] || AIRPORT_CAT["WINDRIDER"];
+      let count = role === "WINDRIDER" || role === "FIREDRAKE" ? 80 : 60; // 400 total
+      for(let i=0; i<count; i++) {
+        let a1, a2, pair;
+        let attempts = 0;
+        do {
+          a1 = pool[Math.floor(Math.random() * pool.length)];
+          a2 = pool[Math.floor(Math.random() * pool.length)];
+          pair = `${a1}-${a2}-${role}`;
+          attempts++;
+        } while((a1 === a2 || used.has(pair)) && attempts < 50);
+        
+        used.add(pair);
+        let dist = role === 'STORMWEAVER' ? Math.floor(1200 + Math.random() * 7500) : Math.floor(350 + Math.random() * 8500);
+        let tier = dist > 6500 ? "Mythic" : dist > 4000 ? "Hard" : dist > 1500 ? "Normal" : "Easy";
+        let cost = Math.ceil((100000 + (Math.pow(dist, 1.38) * 32)) / 10000) * 10000;
+        
+        rts.push({
+          id: "rt_" + (idCounter++),
+          name: `${a1} ↔ ${a2}`,
+          role: role,
+          dist: dist,
+          cost: cost,
+          unlocked: idCounter === 1,
+          minTier: tier
+        });
+      }
+    });
+
+    rts.sort((a,b) => a.dist - b.dist);
+    rts[0].unlocked = true;
+    return rts;
+  }
+
+  function constructPlane(tIdx) {
+    let pIdx = Math.floor(Math.random() * AIR_PREFIXES.length);
+    let bIdx = Math.floor(Math.random() * AIR_BRANDS.length);
+    let mIdx = Math.floor(Math.random() * AIR_MODELS.length);
+    let rIdx = Math.floor(Math.random() * AIR_ROLES.length);
+    let tD = TIERS[tIdx];
+
+    let fluct = 1.0 + (Math.random() * 0.4 - 0.2); 
+    let val = Math.floor(tD.baseVal * fluct);
+    let cost = Math.max(50000, Math.floor(val * 0.8)); 
+
+    let cap = Math.floor(50 + (tIdx * 45) * fluct);
+    let rnge = Math.floor(1000 + (tIdx * 900) * fluct);
+    let burn = Math.floor(200 + (tIdx * 150));
+
+    return {
+      uid: 'D' + Math.floor(100+Math.random()*899) + 'PK',
+      pIdx, bIdx, mIdx, rIdx, tierIndex: tIdx,
+      name: `${AIR_PREFIXES[pIdx]} ${AIR_BRANDS[bIdx]} ${AIR_MODELS[mIdx]}`,
+      role: AIR_ROLES[rIdx], tierName: tD.name, tierColor: tD.color,
+      value: val, cost: cost, capacity: cap, range: rnge, fuelBurn: burn,
+      condition: 100, status: 'READY', assignedRoute: null, assignedPilot: null
+    };
+  }
+
+  function constructPilot(fIdx, lIdx, cIdx, tIdx, bIdx) {
+    let rawPow = [6,25,100,300,1000,2500,6000,15000,35000,66666][tIdx];
+    let val = TIERS[tIdx].baseVal / 10; 
+    return {
+      uid: Date.now()+Math.random().toString(36).substring(2,8), fIdx, lIdx, cIdx, tIdx, bIdx,
+      name: `${P_FIRST[fIdx]} ${P_CALL[cIdx]} ${P_LAST[lIdx]}`,
+      tierIndex: tIdx, tierName: TIERS[tIdx].name, tierColor: TIERS[tIdx].color,
+      bType: B_TYPES[bIdx], bonus: rawPow, value: Math.floor(val),
+      locked: false, assignedTo: null
+    };
+  }
+
+  /* ================= MARKETS & GACHA ================= */
+  function refreshMarket() {
+    State.marketCars = [];
+    for(let i=0; i<5; i++) {
+      let r = Math.random()*100; let tI = r>99.9?9 : r>99?8 : r>95?7 : r>85?6 : r>70?5 : r>50?4 : r>30?3 : r>15?2 : r>5?1 : 0;
+      State.marketCars.push(constructPlane(tI));
+    }
+    renderMarket();
+  }
+
+  function renderMarket() {
+    const grid = $('market-grid'); if(!grid) return; grid.innerHTML = '';
+    State.marketCars.forEach((c, idx) => {
+      const e = document.createElement('div'); e.className = 'plane-card'; e.style.borderColor = c.tierColor;
+      e.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span style="color:${c.tierColor}; font-weight:bold; font-size:10px;">[${c.tierName}]</span>
+          <span class="badge">${c.role}</span>
+        </div>
+        <div style="font-size:13px; font-weight:900; color:#fff;">${c.name}</div>
+        <div class="spec-grid">
+          <div><span>PWR:</span> ${c.capacity}</div>
+          <div><span>RNG:</span> ${c.range.toLocaleString()} KM</div>
+          <div><span>MET:</span> ${c.fuelBurn} /hr</div>
+          <div><span>VAL:</span> ${fmt(c.value)} G</div>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
+          <div>
+            <div style="font-size:9px; color:var(--silver-dim);">Est Val: ${fmt(c.value)} G</div>
+            <div style="font-size:12px; color:var(--status-gold); font-weight:bold; font-family:monospace;">Price: ${fmt(c.cost)} G</div>
+          </div>
+          <button class="btn btn-gold" onclick="buyMarketPlane(${idx})">TAME</button>
+        </div>
+      `;
+      grid.appendChild(e);
+    });
+  }
+
+  function buyMarketPlane(idx) {
+    let c = State.marketCars[idx]; if(!c) return;
+    if(State.funds < c.cost) { toast("Insufficient gold."); return; }
+    State.funds -= c.cost; State.fleet.push(c); State.marketCars.splice(idx, 1);
+    toast(`Tamed: ${c.name}`); updateHUD(); renderMarket();
+  }
+
+  function buyAirCrates(bIdx, count) {
+    let costs = [10000, 100000, 1000000, 5000000];
+    let c = State.buyMode === 1 ? count : Math.max(1, Math.floor(Math.floor(State.funds/costs[bIdx]) * State.buyMode));
+    let cost = costs[bIdx] * c;
+    if(State.funds < cost) { toast("Insufficient gold."); return; }
+    State.funds -= cost;
+    let tArr = bIdx===0?[0,1,2,3]:bIdx===1?[2,3,4,5]:bIdx===2?[4,5,6,7]:[6,7,8,9];
+    for(let i=0; i<c; i++) {
+      let r = Math.random()*100; let tI = r>95?tArr[3]:r>80?tArr[2]:r>50?tArr[1]:tArr[0];
+      State.fleet.push(constructPlane(tI));
+    }
+    updateHUD(); toast(`Hatched ${c}x Dragons.`);
+  }
+
+  function buyDossiers(bIdx, count) {
+    let costs = [5000, 50000, 250000, 1000000];
+    let c = State.buyMode === 1 ? count : Math.max(1, Math.floor(Math.floor(State.funds/costs[bIdx]) * State.buyMode));
+    let cost = costs[bIdx] * c;
+    if(State.funds < cost) { toast("Insufficient gold."); return; }
+    State.funds -= cost;
+    let tArr = bIdx===0?[0,1,2,3]:bIdx===1?[2,3,4,5]:bIdx===2?[4,5,6,7]:[6,7,8,9];
+    for(let i=0; i<c; i++) {
+      let r = Math.random()*100; let tI = r>95?tArr[3]:r>80?tArr[2]:r>50?tArr[1]:tArr[0];
+      State.pilots.push(constructPilot(Math.floor(Math.random()*20), Math.floor(Math.random()*20), Math.floor(Math.random()*8), tI, Math.floor(Math.random()*4)));
+    }
+    updateHUD(); toast(`Recruited ${c}x Riders.`);
+  }
+
+  function buyFuelFixed(amount) {
+    let unit = State.fuelSpotPrice;
+    let gal = amount === 'MAX' ? Math.floor(State.funds / unit) : amount;
+    if(gal <= 0) { toast("Insufficient gold."); return; }
+    let cost = gal * unit;
+    if(State.funds < cost) { toast("Insufficient gold."); return; }
+    State.funds -= cost; State.fuelReserve += gal;
+    toast(`Bought ${fmt(gal)} Slabs of Meat.`); updateHUD();
+  }
+
+  /* ================= FLEET OPS ================= */
+  function sortHangar(mode) { State.sortHangarMode = mode; renderFleet(); }
+  function filterHangarRole(val) { State.filterHangarRole = val; renderFleet(); }
+  function filterHangarTier(val) { State.filterHangarTier = val; renderFleet(); }
+  
+  function assignRoute(pUid, rId) { const p = State.fleet.find(x=>x.uid===pUid); if(p) p.assignedRoute = rId; }
+  function assignPilot(pUid, piUid) {
+    const p = State.fleet.find(x=>x.uid===pUid); if(!p) return;
+    if(p.assignedPilot) { let o = State.pilots.find(x=>x.uid===p.assignedPilot); if(o) o.assignedTo = null; }
+    if(piUid==="") p.assignedPilot = null; 
+    else { p.assignedPilot=piUid; let n=State.pilots.find(x=>x.uid===piUid); if(n) n.assignedTo=pUid; }
+    renderFleet();
+  }
+
+  function autoAssignPilots() {
+    let uncrewed = State.fleet.filter(p => !p.assignedPilot && p.status === 'READY');
+    let freePilots = State.pilots.filter(p => !p.assignedTo && !p.locked).sort((a,b) => b.bonus - a.bonus);
+    if(uncrewed.length === 0 || freePilots.length === 0) {
+      toast("No unassigned dragons or available riders."); return;
+    }
+    let paired = 0;
+    uncrewed.forEach(p => {
+      if(freePilots.length > 0) {
+        let pilot = freePilots.shift();
+        p.assignedPilot = pilot.uid;
+        pilot.assignedTo = p.uid;
+        paired++;
+      }
+    });
+    toast(`Mounted ${paired} dragons.`); renderFleet(); renderPilots();
+  }
+
+  function autoAssignRoutes() {
+    let unrouted = State.fleet.filter(p => !p.assignedRoute && p.status === 'READY');
+    let uRts = State.routes.filter(r => r.unlocked);
+    if(unrouted.length === 0 || uRts.length === 0) {
+      toast("No idle dragons or unlocked quests."); return;
+    }
+    let routedCnt = 0;
+    unrouted.forEach(p => {
+      let valid = uRts.filter(r => (r.role === p.role || r.role === 'WINDRIDER') && r.dist <= p.range);
+      if(valid.length > 0) {
+        valid.sort((a,b) => b.dist - a.dist);
+        p.assignedRoute = valid[0].id;
+        routedCnt++;
+      }
+    });
+    toast(`Auto-Questing ${routedCnt} dragons to max range territories.`);
+    renderFleet();
+  }
+
+  function renderFleet() {
+    const list = $('fleet-list'); if(!list) return; list.innerHTML = '';
+    
+    let filtered = [...State.fleet];
+    if(State.filterHangarRole !== 'ALL') filtered = filtered.filter(p => p.role === State.filterHangarRole);
+    if(State.filterHangarTier !== 'ALL') filtered = filtered.filter(p => p.tierIndex === parseInt(State.filterHangarTier));
+    
+    if(filtered.length===0) { list.innerHTML=`<div style="text-align:center; padding:20px; color:var(--silver-dim); font-size:11px;">No dragons match current filters.</div>`; return; }
+
+    if(State.sortHangarMode==='val') filtered.sort((a,b)=>b.value-a.value);
+    if(State.sortHangarMode==='tier') filtered.sort((a,b)=>b.tierIndex-a.tierIndex);
+    if(State.sortHangarMode==='range') filtered.sort((a,b)=>b.range-a.range);
+
+    const uRts = State.routes.filter(r => r.unlocked);
+    
+    // CACHE DROPDOWNS
+    let routeOptionsCache = {};
+    AIR_ROLES.forEach(role => {
+        let opts = `<option value="">-- Assign Quest (${role}) --</option>`;
+        uRts.filter(r => r.role === role || r.role === 'WINDRIDER').forEach(r => {
+            let yieldM = 1.0 + (State.upgrades.mkt*0.05);
+            let baseYield = r.dist * 165 * yieldM;
+            let fuelD = 1.0; 
+            let baseFuelCost = ((r.dist * 0.22) * (1 - Math.min(0.7, State.upgrades.eng*0.02)) / fuelD) * State.fuelSpotPrice;
+            let net = baseYield - baseFuelCost;
+            opts += `<option value="${r.id}">${r.name} [${r.role}] (${r.dist} KM) | ~${fmt(net)} Net</option>`;
+        });
+        routeOptionsCache[role] = opts;
+    });
+
+    let pilotOpts = `<option value="">-- Assign Rider --</option>`;
+    State.pilots.forEach(pl => { 
+        if(!pl.assignedTo) pilotOpts += `<option value="${pl.uid}">${pl.name} [${pl.bType}: +${fmt(pl.bonus)}%]</option>`; 
+    });
+
+    filtered.forEach(p => {
+      const c = document.createElement('div'); c.className = `plane-card ${p.status==='IN_FLIGHT'?'in-flight':p.condition<50?'damaged':''}`; c.style.borderColor = p.tierColor;
+      
+      let pOpts = routeOptionsCache[p.role];
+      if(p.assignedRoute) pOpts = pOpts.replace(`value="${p.assignedRoute}"`, `value="${p.assignedRoute}" selected`);
+      let rtSel = `<select ${p.status==='IN_FLIGHT'?'disabled':''} onchange="assignRoute('${p.uid}', this.value)">${pOpts}</select>`;
+
+      let pPilotOpts = pilotOpts;
+      if(p.assignedPilot) {
+          let pl = State.pilots.find(x=>x.uid === p.assignedPilot);
+          if(pl) pPilotOpts += `<option value="${pl.uid}" selected>${pl.name} [${pl.bType}: +${fmt(pl.bonus)}%]</option>`;
+      }
+      let piSel = `<select ${p.status==='IN_FLIGHT'?'disabled':''} onchange="assignPilot('${p.uid}', this.value)">${pPilotOpts}</select>`;
+
+      c.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <span style="color:${p.tierColor}; font-weight:bold; font-size:10px;">[${p.tierName}]</span>
+            <span style="font-size:12px; font-weight:900; color:#fff; margin-left:3px;">${p.name}</span>
+            <span style="font-size:9px; color:var(--silver-dim); font-family:monospace;">[${p.uid}]</span>
+          </div>
+          <span class="badge">${p.role}</span>
+        </div>
+        
+        <div class="spec-grid">
+          <div><span>PWR:</span> ${p.capacity}</div>
+          <div><span>RNG:</span> ${p.range.toLocaleString()} KM</div>
+          <div><span>MET:</span> ${p.fuelBurn} /hr</div>
+          <div><span>VAL:</span> ${fmt(p.value)} G</div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; font-size:8.5px; font-family:monospace; color:var(--silver-dim);">
+          <span>HEALTH COND: ${p.condition.toFixed(0)}%</span>
+          <span id="st-${p.uid}">STATUS: <strong style="color:#fff;">${p.status}</strong></span>
+        </div>
+        
+        <div style="display:flex; flex-direction:column; gap:3px;">${rtSel}${piSel}</div>
+        
+        ${p.status==='IN_FLIGHT'?`<div class="flight-bar-bg"><div id="bar-${p.uid}" class="flight-bar-fill"></div></div>`:''}
+        
+        <div style="display:flex; justify-content:space-between; margin-top:3px;">
+          <div style="display:flex; gap:3px;">
+            <button class="btn" style="padding:3px 5px; font-size:8px;" onclick="exportPlane('${p.uid}')">Trade</button>
+            <button class="btn btn-purple" style="padding:3px 5px; font-size:8px;" ${p.status==='IN_FLIGHT'?'disabled':''} onclick="initAuction('${p.uid}', 'plane')">Auction</button>
+            <button class="btn btn-danger" style="padding:3px 5px; font-size:8px;" ${p.status==='IN_FLIGHT'?'disabled':''} onclick="scrapPlane('${p.uid}')">Release</button>
+          </div>
+          <div style="display:flex; gap:3px;">
+            <button class="btn" style="padding:3px 6px; font-size:8px;" ${p.status==='IN_FLIGHT'?'disabled':''} onclick="maintainAirframe('${p.uid}')">Heal</button>
+            <button class="btn btn-red" style="padding:4px 8px; font-size:8.5px;" ${p.status==='IN_FLIGHT'||!p.assignedRoute||!p.assignedPilot?'disabled':''} onclick="dispatchFlight('${p.uid}')">Flight</button>
+          </div>
+        </div>
+      `;
+      list.appendChild(c);
+    });
+  }
+
+  function scrapPlane(uid) {
+    let i = State.fleet.findIndex(x=>x.uid===uid); if(i===-1) return;
+    let val = Math.floor(State.fleet[i].value * 0.5); State.funds+=val;
+    if(State.fleet[i].assignedPilot) { let p=State.pilots.find(x=>x.uid===State.fleet[i].assignedPilot); if(p) p.assignedTo=null; }
+    State.fleet.splice(i,1); State.statPlanesScrapped++;
+    toast(`Released for ${fmt(val)} G.`); updateHUD(); renderFleet();
+  }
+
+  function quickSellPlanes(maxT) {
+    let t = State.fleet.filter(s=>s.tierIndex<=maxT && s.status==='READY');
+    if(t.length===0){toast("No eligible dragons in tier bracket.");return;}
+    let tot=0; t.forEach(s=>{
+      tot+=Math.floor(s.value*0.5);
+      if(s.assignedPilot) { let p=State.pilots.find(x=>x.uid===s.assignedPilot); if(p) p.assignedTo=null; }
+      State.statPlanesScrapped++;
+    });
+    State.fleet = State.fleet.filter(s=>s.tierIndex>maxT || s.status!=='READY');
+    State.funds+=tot; toast(`Released ${t.length} dragons for ${fmt(tot)} G.`); updateHUD(); renderFleet(); renderPilots();
+  }
+
+  /* ================= PILOT ROSTER ================= */
+  function sortPilots(mode) { State.sortPilotsMode = mode; renderPilots(); }
+  function filterPilotTier(val) { State.filterPilotTier = val; renderPilots(); }
+
+  function renderPilots() {
+    const grid = $('pilots-grid'); if(!grid) return; grid.innerHTML = '';
+    
+    let filtered = [...State.pilots];
+    if(State.filterPilotTier !== 'ALL') filtered = filtered.filter(p => p.tierIndex === parseInt(State.filterPilotTier));
+
+    if(filtered.length===0) { grid.innerHTML = `<div style="text-align:center; padding: 20px; color: var(--silver-dim); font-size:11px;">No riders match filter criteria.</div>`; return; }
+
+    if(State.sortPilotsMode==='val') filtered.sort((a,b)=>b.value-a.value);
+    if(State.sortPilotsMode==='tier') filtered.sort((a,b)=>b.tierIndex-a.tierIndex);
+    
+    filtered.forEach(p => {
+      const c = document.createElement('div'); c.className = 'plane-card'; c.style.borderColor = p.tierColor;
+      c.innerHTML = `
+        <div class="stat-block" style="display:flex; justify-content:space-between;">
+          <span style="color:${p.tierColor}; font-weight:bold; font-size:9.5px;">${p.tierName}</span>
+          <span style="color:var(--status-green); font-size:9.5px;">[${p.bType}] +${fmt(p.bonus)}%</span>
+        </div>
+        <div style="font-size:12px; font-weight:900; color:#fff;">${p.name} ${p.locked?'[🔒]':''}</div>
+        <div style="font-size:9px; color:var(--silver-dim);">${p.assignedTo ? `Assigned to: ${p.assignedTo}` : 'Standby / Unassigned'}</div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
+          <span class="stat-block" style="font-size:10px; color:var(--silver-bright); font-weight:bold;">VAL: ${fmt(p.value)} G</span>
+          <div style="display:flex; flex-wrap:wrap; gap:3px; justify-content:flex-end;">
+            <button class="btn" style="padding:3px 5px; font-size:8px;" onclick="exportPilot('${p.uid}')">Trade</button>
+            <button class="btn" style="padding:3px 5px; font-size:8px;" onclick="togglePilotLock('${p.uid}')">${p.locked?'Unlock':'Lock'}</button>
+            ${!p.assignedTo&&!p.locked?`<button class="btn btn-purple" style="padding:3px 5px; font-size:8px;" onclick="initAuction('${p.uid}', 'pilot')">Auction</button><button class="btn btn-danger" style="padding:3px 5px; font-size:8px;" onclick="sellPilot('${p.uid}')">Exile</button>`:''}
+          </div>
+        </div>
+      `;
+      grid.appendChild(c);
+    });
+  }
+  function togglePilotLock(uid) { let p=State.pilots.find(x=>x.uid===uid); if(p){p.locked=!p.locked; renderPilots();} }
+  function sellPilot(uid) {
+    let idx = State.pilots.findIndex(s=>s.uid===uid);
+    if(idx>-1) { let v=Math.floor(State.pilots[idx].value*0.5); State.funds+=v; State.pilots.splice(idx,1); toast(`Exiled for ${fmt(v)} G.`); updateHUD(); renderPilots(); renderFleet(); }
+  }
+  function quickSellPilots(maxT) {
+    let ts = State.pilots.filter(s=>s.tierIndex<=maxT && !s.assignedTo && !s.locked);
+    if(ts.length===0){toast("No eligible riders.");return;}
+    let tot=0; ts.forEach(s=>tot+=Math.floor(s.value*0.5));
+    State.pilots = State.pilots.filter(s=>s.tierIndex>maxT || s.assignedTo || s.locked);
+    State.funds+=tot; toast(`Exiled ${ts.length} riders for ${fmt(tot)} G.`); updateHUD(); renderPilots();
+  }
+
+  /* ================= ROUTES ================= */
+  function filterRouteCategory(val) { State.filterRouteCat = val; renderRoutes(); }
+
+  function renderRoutes() {
+    const list = $('routes-list'); if(!list) return; list.innerHTML = '';
+    let filtered = State.filterRouteCat === 'ALL' ? State.routes : State.routes.filter(r => r.role === State.filterRouteCat);
+
+    filtered.forEach(r => {
+      let yieldM = 1.0 + (State.upgrades.mkt*0.05);
+      let baseYield = r.dist * 165 * yieldM;
+      let fuelCost = ((r.dist * 0.22) * (1 - Math.min(0.7, State.upgrades.eng*0.02))) * State.fuelSpotPrice;
+      let netProfit = baseYield - fuelCost;
+
+      const row = document.createElement('div'); row.className = 'route-row';
+      row.innerHTML = `
+        <div style="flex:1;">
+          <div style="font-weight:900; color:#fff;">${r.name} <span class="badge" style="margin-left:4px;">${r.role}</span></div>
+          <div style="font-size:9px; color:var(--silver-dim); font-family:monospace; margin-top:2px;">
+            ${r.dist.toLocaleString()} KM // Diff: ${r.minTier}
+          </div>
+          <div style="font-size:9px; color:var(--silver-dim); font-family:monospace; margin-top:2px;">
+            Yield: ${fmt(baseYield)} G | Meat: -${fmt(fuelCost)} G
+          </div>
+          <div style="font-size:10px; color:var(--status-green); font-weight:bold; font-family:monospace; margin-top:2px;">
+            Est. Net Profit: ~${fmt(netProfit)} G
+          </div>
+        </div>
+        <div>
+          ${r.unlocked?`<span style="color:var(--status-gold); font-weight:bold; font-family:monospace;">MAPPED ✓</span>`:`<button class="btn btn-red" onclick="unlockRoute('${r.id}')">Chart (${fmt(r.cost)} G)</button>`}
+        </div>
+      `;
+      list.appendChild(row);
+    });
+  }
+  function unlockRoute(rId) { const r=State.routes.find(x=>x.id===rId); if(!r)return; if(State.funds<r.cost){toast("Insufficient Gold.");return;} State.funds-=r.cost; r.unlocked=true; updateHUD(); renderRoutes(); renderFleet(); }
+
+  /* ================= CHECKLIST, SIDE MISSIONS & AUTOMATION ================= */
+  function toggleAutoLoop() {
+    State.automation.autoDispatch = !State.automation.autoDispatch;
+    toast(`Quest Loop: ${State.automation.autoDispatch ? 'ON' : 'OFF'}`);
+    updateAutomationUI();
+  }
+  function toggleAutoMRO() {
+    State.automation.autoMRO = !State.automation.autoMRO;
+    toast(`Auto-Heal: ${State.automation.autoMRO ? 'ON' : 'OFF'}`);
+    updateAutomationUI();
+  }
+  function toggleAutoRefuel() {
+    State.automation.autoRefuel = !State.automation.autoRefuel;
+    toast(`Auto-Meat: ${State.automation.autoRefuel ? 'ON' : 'OFF'}`);
+    updateAutomationUI();
+  }
+  function updateAutomationUI() {
+    if($('chk-autoloop'))$('chk-autoloop').innerText = State.automation.autoDispatch ? 'ACTIVE' : 'ENABLE';
+    if($('chk-automro'))$('chk-automro').innerText = State.automation.autoMRO ? 'ACTIVE' : 'ENABLE';
+    if($('chk-autorefuel'))$('chk-autorefuel').innerText = State.automation.autoRefuel ? 'ACTIVE' : 'ENABLE';
+    renderMilestones();
+    renderSideMissions();
+  }
+
+  function generateSideMissions() {
+    let unlocked = State.routes.filter(r => r.unlocked);
+    if(unlocked.length === 0) unlocked = State.routes; 
+    
+    State.sideMissions = [];
+    for(let i=0; i<3; i++) {
+        let rt = unlocked[Math.floor(Math.random() * unlocked.length)];
+        State.sideMissions.push({
+            id: "sm_" + Date.now() + i,
+            title: `King's Decree: ${rt.name}`,
+            desc: `Deploy a ${rt.role} dragon on ${rt.name}.`,
+            reqRoute: rt.id,
+            reqRole: rt.role,
+            readyToClaim: false,
+            rewardCash: Math.floor(rt.dist * 500) + 1000000,
+            rewardTier: Math.min(9, Math.floor(rt.dist / 1000))
+        });
+    }
+  }
+
+  function refreshSideMissions() {
+    generateSideMissions();
+    renderSideMissions();
+    toast("Royal Decrees refreshed.");
+  }
+
+  function renderSideMissions() {
+    const list = $('side-missions-list'); if(!list) return; list.innerHTML = '';
+    State.sideMissions.forEach((m, idx) => {
+      let isReady = m.readyToClaim;
+      let rText = `+${fmt(m.rewardCash)} G & T${m.rewardTier+1} Dragon`;
+      let div = document.createElement('div');
+      div.className = `check-item ${isReady ? 'done' : ''}`;
+      div.innerHTML = `
+        <div>
+          <div style="font-weight:bold; color:#fff;">${m.title}</div>
+          <div style="font-size:9.5px; color:var(--silver-dim);">${m.desc}</div>
+          <div style="font-size:9.5px; color:var(--status-gold); font-weight:bold; margin-top:2px;">Bounty: ${rText}</div>
+        </div>
+        <div>
+          <button class="btn btn-gold" ${isReady ? '' : 'disabled'} onclick="claimSideMission(${idx})">CLAIM</button>
+        </div>
+      `;
+      list.appendChild(div);
+    });
+  }
+
+  function claimSideMission(idx) {
+    let m = State.sideMissions[idx];
+    if(!m || !m.readyToClaim) return;
+    
+    State.funds += m.rewardCash;
+    let bonusPlane = constructPlane(m.rewardTier); 
+    State.fleet.push(bonusPlane);
+    toast(`Bounty Paid! +${fmt(m.rewardCash)} G & ${bonusPlane.name} hatched!`);
+
+    State.sideMissions.splice(idx, 1);
+    
+    let unlocked = State.routes.filter(r => r.unlocked);
+    if(unlocked.length === 0) unlocked = State.routes;
+    let rt = unlocked[Math.floor(Math.random() * unlocked.length)];
+    State.sideMissions.push({
+        id: "sm_" + Date.now(),
+        title: `King's Decree: ${rt.name}`,
+        desc: `Deploy a ${rt.role} dragon on ${rt.name}.`,
+        reqRoute: rt.id,
+        reqRole: rt.role,
+        readyToClaim: false,
+        rewardCash: Math.floor(rt.dist * 500) + 1000000,
+        rewardTier: Math.min(9, Math.floor(rt.dist / 1000))
+    });
+
+    updateHUD(); renderSideMissions();
+  }
+
+  function renderMilestones() {
+    const list = $('milestone-list'); if(!list) return; list.innerHTML = '';
+    MILESTONES.forEach(m => {
+      let isClaimed = State.claimedMilestones.includes(m.id);
+      let canClaim = !isClaimed && m.req(State);
+      let div = document.createElement('div');
+      div.className = `check-item ${isClaimed ? 'done' : ''}`;
+      div.innerHTML = `
+        <div>
+          <div style="font-weight:bold; color:${isClaimed ? 'var(--status-green)' : '#fff'};">${isClaimed ? '✓ ' : ''}${m.title}</div>
+          <div style="font-size:9.5px; color:var(--silver-dim);">${m.desc}</div>
+          <div style="font-size:9.5px; color:var(--status-gold); font-weight:bold; margin-top:1px;">Reward: +${fmt(m.reward)} G</div>
+        </div>
+        <div>
+          ${isClaimed 
+            ? `<span style="color:var(--status-green); font-weight:bold; font-size:9px;">CLAIMED</span>` 
+            : `<button class="btn btn-red" ${canClaim ? '' : 'disabled'} onclick="claimMilestone('${m.id}')">CLAIM</button>`
+          }
+        </div>
+      `;
+      list.appendChild(div);
+    });
+  }
+
+  function claimMilestone(mId) {
+    let m = MILESTONES.find(x => x.id === mId);
+    if(!m || State.claimedMilestones.includes(mId) || !m.req(State)) return;
+    State.claimedMilestones.push(mId);
+    State.funds += m.reward;
+    toast(`Milestone Achieved: +${fmt(m.reward)} G`);
+    updateHUD(); renderMilestones();
+  }
+
+  /* ================= UPGRADES ================= */
+  function getUpgCost(type, lvl) { return type==='mkt' ? Math.floor(100000*Math.pow(1.5,lvl)) : Math.floor(150000*Math.pow(1.6,lvl)); }
+  function renderUpgrades() {
+    let mC = getUpgCost('mkt', State.upgrades.mkt); let eC = getUpgCost('eng', State.upgrades.eng);
+    if($('upg-mkt-lvl'))$('upg-mkt-lvl').innerText=State.upgrades.mkt; 
+    if($('upg-mkt-pct'))$('upg-mkt-pct').innerText=State.upgrades.mkt*5; 
+    if($('upg-mkt-cost'))$('upg-mkt-cost').innerText=fmt(mC);
+    
+    if($('upg-eng-lvl'))$('upg-eng-lvl').innerText=State.upgrades.eng; 
+    if($('upg-eng-pct'))$('upg-eng-pct').innerText=Math.min(70, State.upgrades.eng*2); 
+    if($('upg-eng-cost'))$('upg-eng-cost').innerText=fmt(eC);
+  }
+  function buyUpgrade(type) {
+    let cost = getUpgCost(type, State.upgrades[type]);
+    if(State.funds < cost) { toast("Insufficient Gold."); return; }
+    State.funds -= cost; State.upgrades[type]++;
+    updateHUD(); renderUpgrades(); toast("Sanctuary upgrade complete.");
+  }
+
+  /* ================= FLIGHT LOGIC ================= */
+  function dispatchFlight(pUid) {
+    const p = State.fleet.find(x=>x.uid===pUid); if(!p||p.status==='IN_FLIGHT'||!p.assignedRoute||!p.assignedPilot)return;
+    const r = State.routes.find(x=>x.id===p.assignedRoute); const pl = State.pilots.find(x=>x.uid===p.assignedPilot); if(!r||!pl)return;
+    
+    // Auto-MRO pre-check
+    if(p.condition < 45) {
+      if(State.automation.autoMRO && State.funds >= Math.floor((100-p.condition)*2500)) {
+        maintainAirframe(p.uid);
+      } else {
+        toast("[GROUNDED] Injuries severe. Must heal."); return;
+      }
+    }
+
+    let yieldM = 1.0 + (State.upgrades.mkt*0.05); let speedD = 1.0; let fuelD = 1.0; let safeD = 1.0;
+    if(pl.bType==='HOARD') yieldM *= (1 + pl.bonus/100);
+    if(pl.bType==='SWIFT') speedD = 1 + pl.bonus/100; 
+    if(pl.bType==='HUNGER') fuelD = 1 + pl.bonus/100;
+    if(pl.bType==='SCALES') safeD = 1 + pl.bonus/100;
+
+    let baseMs = Math.max(5000, Math.min(90000, (r.dist/8000)*90000));
+    let msTime = Math.max(1000, baseMs / speedD); 
+
+    let fBurn = Math.floor((r.dist * 0.22) * (1 - Math.min(0.7, State.upgrades.eng*0.02)) / fuelD);
+    
+    // Auto-Refuel check
+    if(State.fuelReserve < fBurn) {
+      if(State.automation.autoRefuel && State.funds >= 100000 * State.fuelSpotPrice) {
+        State.funds -= 100000 * State.fuelSpotPrice;
+        State.fuelReserve += 100000;
+      } else {
+        toast("Insufficient Meat."); return;
+      }
+    }
+    State.fuelReserve -= fBurn;
+
+    let bRev = r.dist * 165 * yieldM;
+    
+    p.status='IN_FLIGHT'; p.flightStart=Date.now(); p.flightDuration=msTime; p.flightEnd=p.flightStart+msTime; p.expRev=bRev; p.wear=10/safeD;
+    
+    State.sideMissions.forEach(m => {
+        if(!m.readyToClaim && p.assignedRoute === m.reqRoute && p.role === m.reqRole) {
+            m.readyToClaim = true;
+            toast(`Objective Met: ${m.title}`);
+            if($('tab-checklist').classList.contains('active')) renderSideMissions();
+        }
+    });
+
+    renderFleet(); updateHUD();
+  }
+  function dispatchAll() { State.fleet.filter(p=>p.status==='READY'&&p.assignedRoute&&p.assignedPilot).forEach(p=>dispatchFlight(p.uid)); }
+  function maintainAirframe(pUid) { const p=State.fleet.find(x=>x.uid===pUid); if(!p||p.status==='IN_FLIGHT')return; let c=Math.floor((100-p.condition)*2500); if(State.funds<c)return; State.funds-=c; p.condition=100; updateHUD(); renderFleet(); }
+  function maintainAll() { let c=0; State.fleet.filter(p=>p.condition<90&&p.status!=='IN_FLIGHT').forEach(p=>c+=Math.floor((100-p.condition)*2500)); if(c===0||State.funds<c)return; State.funds-=c; State.fleet.forEach(p=>p.condition=100); updateHUD(); renderFleet(); }
+
+  /* ================= UNIVERSAL AUCTIONS (10 LANES) ================= */
+  function initAuction(uid, type) {
+    if(State.auctions.length>=10){toast("Cages full.");return;}
+    let item;
+    if(type==='plane') { let i=State.fleet.findIndex(x=>x.uid===uid); if(i===-1)return; item=State.fleet[i]; if(item.assignedPilot){ let px=State.pilots.find(x=>x.uid===item.assignedPilot); if(px)px.assignedTo=null; } State.fleet.splice(i,1); }
+    if(type==='pilot') { let i=State.pilots.findIndex(x=>x.uid===uid); if(i===-1)return; item=State.pilots[i]; State.pilots.splice(i,1); }
+    
+    State.auctions.push({ item:item, type:type, baseVal:item.value, timer:20.0, currentBid:Math.floor(item.value*0.9), log:[] });
+    updateHUD(); renderAuctions(); renderFleet(); renderPilots(); toast("Asset sent to Menagerie.");
+  }
+  
+  function fillAuctions(type) {
+    let a=10-State.auctions.length; if(a<=0) { toast("Cages full."); return; }
+    
+    let c = type==='planes' 
+      ? State.fleet.filter(p=>p.status==='READY'&&!p.assignedPilot).sort((x,y)=>x.value-y.value) 
+      : State.pilots.filter(p=>!p.assignedTo&&!p.locked).sort((x,y)=>x.value-y.value);
+        
+    if(c.length===0){toast("No eligible assets available.");return;}
+    
+    let loaded = 0;
+    c.slice(0,a).forEach(item=>{ 
+      if(type==='planes'){ let i=State.fleet.findIndex(x=>x.uid===item.uid); State.fleet.splice(i,1); }
+      if(type==='pilots'){ let i=State.pilots.findIndex(x=>x.uid===item.uid); State.pilots.splice(i,1); }
+      State.auctions.push({item:item, type:type, baseVal:item.value, timer:20.0, currentBid:Math.floor(item.value*0.9), log:[]}); 
+      loaded++;
+    });
+    
+    updateHUD(); renderPilots(); renderFleet(); renderAuctions(); 
+    toast(`Loaded ${loaded} assets to Auction.`);
+  }
+
+  function renderAuctions() {
+    const b=$('auction-board'); if(!b)return; $('auction-count').innerText=State.auctions.length; b.innerHTML='';$('auction-idle').style.display = State.auctions.length===0 ? 'block' : 'none';
+    State.auctions.forEach((a) => {
+      let hLog = a.log.map(l=>`<div>${l}</div>`).join('');
+      let col = a.item.tierColor || '#fff';
+      b.innerHTML+=`
+        <div class="auction-slot">
+          <div style="display:flex;justify-content:space-between;align-items:flex-end;">
+            <div>
+              <div style="font-size:12px;font-weight:bold;color:${col};">${a.item.name}</div>
+              <div class="stat-block" style="font-size:9px;">VAL: ${fmt(a.baseVal)} G</div>
+            </div>
+            <div style="text-align:right;">
+              <div id="auc-timer-${a.item.uid}" style="font-size:8.5px;color:var(--silver-dim);font-weight:bold;">TIME [${a.timer.toFixed(1)}s]</div>
+              <div id="auc-bid-${a.item.uid}" style="font-size:14px;font-weight:bold;color:var(--status-gold);font-family:monospace;">${fmt(a.currentBid)} G</div>
+            </div>
+          </div>
+          <div class="auction-timer-bg"><div id="auc-bar-${a.item.uid}" class="auction-timer-bar" style="width:${(a.timer/20)*100}%;"></div></div>
+          <div class="auction-log">${hLog}</div>
+        </div>
+      `;
+    });
+  }
+
+  /* ================= GAME LOOP ================= */
+  const FACTIONS = ["Royal Guard","Dragon Cult","Mercenary Band","Beast Tamers"];
+  function gameTick() {
+    let n = Date.now();
+    
+    // Market Timer
+    State.marketTimer -= 0.1;
+    let mT = $('market-timer'); if(mT) mT.innerText = Math.max(0, State.marketTimer).toFixed(1);
+    if(State.marketTimer <= 0) { State.marketTimer = 10.0; refreshMarket(); }
+
+    // Flights
+    State.fleet.forEach(p => {
+      if(p.status==='IN_FLIGHT') {
+        let pct = ((n-p.flightStart)/p.flightDuration)*100;
+        if(pct>=100) { 
+          p.status='READY'; State.funds+=p.expRev; p.condition=Math.max(10, p.condition-p.wear); updateHUD(); 
+          let st=$(`st-${p.uid}`); if(st) st.innerHTML=`STATUS: <strong style="color:#fff;">READY</strong>`; 
+          let b=$(`bar-${p.uid}`); if(b){b.style.width='0%'; b.parentElement.style.display='none';} 
+          
+          if(State.automation.autoDispatch && p.assignedRoute && p.assignedPilot) {
+            setTimeout(() => dispatchFlight(p.uid), 200);
+          } else {
+            renderFleet(); 
+          }
+        } 
+        else { let b=$(`bar-${p.uid}`); if(b) b.style.width=pct+'%'; }
+      }
+    });
+
+    // Auctions
+    if(State.auctions.length>0) {
+      for(let i=State.auctions.length-1; i>=0; i--) {
+        let a=State.auctions[i]; a.timer-=0.1; 
+        
+        let uiT = $(`auc-timer-${a.item.uid}`);
+        let uiB = $(`auc-bar-${a.item.uid}`);
+        let uiBid = $(`auc-bid-${a.item.uid}`);
+
+        if(a.timer>0 && Math.random()<0.10) {
+          let f=FACTIONS[Math.floor(Math.random()*FACTIONS.length)]; let m=1.05+(Math.random()*0.10);
+          if(Math.random()<0.015) { m=2.0+(Math.random()*18.0); a.log.push(`<span style="color:var(--status-gold);">[NOBLE WAR] Spike!</span>`); }
+          let nB=Math.floor(a.currentBid*m); if(nB<=a.currentBid) nB=a.currentBid+1; a.currentBid=nB;
+          a.log.push(`<span style="color:var(--silver-bright);">[${f}] bids ${fmt(a.currentBid)} G</span>`);
+          if(a.log.length>3) a.log.shift();
+          if(a.timer<=1.0){ a.timer=3.0; a.log.push(`<span style="color:var(--status-red);">[OVERTIME] Reset to 3s!</span>`); }
+          if(uiBid) uiBid.innerText = fmt(a.currentBid) + " G";
+          if($('tab-auction').classList.contains('active')) renderAuctions();
+        } else {
+          if(uiT) uiT.innerText = `TIME [${Math.max(0, a.timer).toFixed(1)}s]`;
+          if(uiB) { uiB.style.width = ((a.timer/20)*100) + '%'; uiB.style.background = a.timer <= 3 ? 'var(--status-red)' : 'var(--status-red)'; }
+        }
+
+        if(a.timer<=0){ 
+          State.funds+=a.currentBid; State.statAuctionsSold++;
+          toast(`SOLD for ${fmt(a.currentBid)} G!`); 
+          State.auctions.splice(i,1); updateHUD(); 
+          if($('tab-auction').classList.contains('active')) renderAuctions();
+        }
+      }
+    }
+  }
+
+  /* ================= INIT & NAVIGATION ================= */
+  function setTab(tabId) {
+    document.querySelectorAll('.nav-btn').forEach(b => { b.classList.remove('active'); if(b.getAttribute('onclick').includes(tabId)) b.classList.add('active'); });
+    document.querySelectorAll('.view-tab').forEach(t => t.classList.remove('active'));
+    const target = $('tab-'+tabId); if(target) target.classList.add('active');
+
+    if(tabId==='fleet') renderFleet();
+    if(tabId==='pilots') renderPilots();
+    if(tabId==='routes') renderRoutes();
+    if(tabId==='auction') renderAuctions();
+    if(tabId==='checklist') { renderMilestones(); renderSideMissions(); }
+    if(tabId==='upgrades') renderUpgrades();
+  }
+
+  function initUI() {
+    if(!State.routes || State.routes.length < 400) State.routes = generateRoutes();
+    if(!State.sideMissions || State.sideMissions.length === 0) generateSideMissions();
+    updateHUD(); refreshMarket(); updateAutomationUI(); renderUpgrades();
+    if(globalInterval) clearInterval(globalInterval); globalInterval = setInterval(gameTick, 100);
+  }
+  initUI();
+</script>
+</body>
+</html>
